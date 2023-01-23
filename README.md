@@ -90,31 +90,110 @@ Nessa aula, vamos criar um script semelhante ao anterior, porém, ele converter�
 ```shell
 #!/bin/bash
 
+converte_imagem(){
+	local caminho_imagem=$1
+	local imagem_sem_extensao=$(ls $caminho_imagem | awk -F. '{ print $1 }')
+
+	#Estamos realizando a conversão.
+	convert $imagem_sem_extensao.jpg $imagem_sem_extensao.png
+}
+
 varrer_diretorio(){
-	cd ~/Downloads/imagens-novos-livros
+	cd $1
 
 	for arquivo in *
 	do
-		if [ -d $arquivo ] then
-
+		#Estamos obtendo o caminho completo da variável "caminho_arquivo"
+		local caminho_arquivo=$(find ~/Downloads/imagens-novos-livros -name $arquivo)
+		if [ -d $caminho_arquivo ] then
+			#Se for um diretório, entraremos varreremos o conteúdo desse diretório.
+			varrer_diretorio $caminho_arquivo
 		else
-
+			#Se for uma imagem, faremos a conversão da imagem.
+			converte_imagem $caminho_arquivo
 		fi
 	done
 }
 
-for arquivo in *
-do
-	#Se for um diretório, entraremos no diretório e varreremos o conteúdo.
-	if [ -d $arquivo ] then
-		cd $arquivo
-		for conteudo_arquivo in *
-	else
-		#Se for uma imagem, faremos a conversão da imagem.
-	fi
-done
+#Diretório raiz em que os arquivos estão inseridos.
+varrer_diretorio ~/Downloads/imagens-novos-livros
+
+#Estamos verificando o status de saída da função.
+if [ $? -eq 0] then
+	echo "Conversão realizada com sucesso!"
+else
+	echo "Houve um problema na conversão!"
+fi
 ```
 
 # AULA 04 - NOMES DOS PROCESSOS
 
+Existem dez processos que estão alocando muita memória no sistema, dessa forma, devemos criar um script que obtenha os dez processos que estão com mais consumo de data no momento em que o script foi executado.
+
+O script deverá criar **um arquivo para cada processo**, exibindo, dentro do arquivo, as informações no formato abaixo.
+
+`2017-07-21, 15:09:30, 150MB`
+
+No exemplo acima, o primeiro valor é a **data**, o segundo valor é o **horário** e o terceiro valor é a **quantidade de memória** que o processo está executando no momento.
+
+O código do script será inserido abaixo.
+
+```shell
+#!/bin/bash
+
+# Estamos obtendo apenas os PIDs dos processos, que estão ordenados pela quantidade de memória alocada.
+
+processos=$(ps -e -o pid --sort -size | head -n 11 | grep [0-9])
+
+for pid in processos
+do
+	echo $(ps -p $pid -o comm)
+done
+```
+
+O comando `ps -e -o pid --sort -size` realiza uma listagem dos `PIDs` dos processos ordenados pela quantidade de memória alocada. Com o `PID` do processo, teremos todas as informações que precisamos.
+
+O comando `head` exibe apenas as dez primeiras linhas de um comando.
+
 # AULA 05 - SALVANDO PROCESSOS EM ARQUIVOS SEPARADOS
+
+Nessa aula, criaremos um arquivo, que possuirá as informações requisitadas na aula passada, para cada processo que estiver na lista dos dez processos que mais estarão consumindo memória quando o script for executado.
+
+```shell
+#!/bin/bash
+
+# Se não existir o diretório "log", ele será criado.
+if [ ! -d log ] then
+	mkdir log
+fi
+
+processos_memoria() {
+	# Estamos obtendo apenas os PIDs dos processos, que estão ordenados pela quantidade de memória alocada.
+
+	processos=$(ps -e -o pid --sort -size | head -n 11 | grep [0-9])
+
+	# Para cada processo, o comando abaixo será realizado.
+	for pid in processos
+	do
+		nome_processo=$(ps -p $pid -o comm)
+		echo -n $(date +%F, %H:%M:%S, ) >> log/nome_processo.log
+
+		tamanho_processo=$(ps -p $pid -o size | grep [0-9])
+
+		# Estamos obtendo o tamanho do processo em MB.
+		echo "$(bc <<< "scale=2;$tamanho_processo/1024") MB" >> log/$nome_processo.log
+	done
+}
+
+# Estamos chamando a função "processos_memoria" e verificando o status de saída dessa função.
+processos_memoria
+if [ $? -eq 0 ] then
+	echo "Os arquivos foram salvos com sucesso!"
+else
+	echo "Houve um problema ao salvar os arquivos."
+fi
+```
+
+O comando `date +%F, %H:%M:%S` exibe o dia e o horário em que o comando foi executado.
+
+O comando `bc <<< "scale=2;931348/1024"` realiza a divisão desses dois valores.
