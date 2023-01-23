@@ -89,37 +89,45 @@ Nessa aula, vamos criar um script semelhante ao anterior, porém, ele converter�
 
 ```shell
 #!/bin/bash
-
 converte_imagem(){
+
 	local caminho_imagem=$1
 	local imagem_sem_extensao=$(ls $caminho_imagem | awk -F. '{ print $1 }')
 
-	#Estamos realizando a conversão.
+	# Estamos realizando a conversão.
+
 	convert $imagem_sem_extensao.jpg $imagem_sem_extensao.png
 }
 
 varrer_diretorio(){
-	cd $1
 
-	for arquivo in *
-	do
-		#Estamos obtendo o caminho completo da variável "caminho_arquivo"
-		local caminho_arquivo=$(find ~/Downloads/imagens-novos-livros -name $arquivo)
-		if [ -d $caminho_arquivo ] then
-			#Se for um diretório, entraremos varreremos o conteúdo desse diretório.
-			varrer_diretorio $caminho_arquivo
-		else
-			#Se for uma imagem, faremos a conversão da imagem.
-			converte_imagem $caminho_arquivo
-		fi
-	done
+# Estamos entrando no diretório que foi passado como parâmetro.
+cd $1
+
+local diretorio_raiz="/home/rafael/Desktop/codes/courses/alura/shell-scripting-parte-01-scripts-de-automacao-de-tarefas/convert-jpg-to-png"
+
+for arquivo in *
+do
+	local caminho_arquivo=$(find $diretorio_raiz -name "$arquivo")
+
+	if [ -d $caminho_arquivo ]
+	then
+		#Se for um diretório, varreremos o conteúdo desse diretório.
+		varrer_diretorio $caminho_arquivo
+	else
+	# Se for uma imagem, faremos a conversão da imagem.
+	converte_imagem $caminho_arquivo
+	fi
+done
 }
 
-#Diretório raiz em que os arquivos estão inseridos.
-varrer_diretorio ~/Downloads/imagens-novos-livros
+# Diretório raiz em que os arquivos estão inseridos.
 
-#Estamos verificando o status de saída da função.
-if [ $? -eq 0] then
+varrer_diretorio ./imagens-novos-livros
+
+# Estamos verificando o status de saída da função.
+if [ $? -eq 0 ]
+then
 	echo "Conversão realizada com sucesso!"
 else
 	echo "Houve um problema na conversão!"
@@ -145,7 +153,7 @@ O código do script será inserido abaixo.
 
 processos=$(ps -e -o pid --sort -size | head -n 11 | grep [0-9])
 
-for pid in processos
+for pid in $processos
 do
 	echo $(ps -p $pid -o comm)
 done
@@ -162,35 +170,41 @@ Nessa aula, criaremos um arquivo, que possuirá as informações requisitadas na
 ```shell
 #!/bin/bash
 
-# Se não existir o diretório "log", ele será criado.
-if [ ! -d log ] then
+# Se o diretório "log" não existir, ele será criado.
+if [ ! -d log ]
+then
 	mkdir log
 fi
 
-processos_memoria() {
-	# Estamos obtendo apenas os PIDs dos processos, que estão ordenados pela quantidade de memória alocada.
+processos_memoria(){
+
+	# Estamos obtendo o PIDs dos processos, que estão ordenados pela quantidade de memória alocada.
 
 	processos=$(ps -e -o pid --sort -size | head -n 11 | grep [0-9])
 
-	# Para cada processo, o comando abaixo será realizado.
-	for pid in processos
+	# Para cada processo, o bloco de código abaixo será executado.
+
+	for pid in $processos
 	do
-		nome_processo=$(ps -p $pid -o comm)
-		echo -n $(date +%F, %H:%M:%S, ) >> log/nome_processo.log
 
-		tamanho_processo=$(ps -p $pid -o size | grep [0-9])
+	nome_processo=$(ps -p $pid -o comm | tail -n 1 )
+	echo -n $(date +%F,%H:%M:%S, ) >> log/$nome_processo.log
 
-		# Estamos obtendo o tamanho do processo em MB.
-		echo "$(bc <<< "scale=2;$tamanho_processo/1024") MB" >> log/$nome_processo.log
+	tamanho_processo=$(ps -p $pid -o size | grep [0-9])
+
+	#Estamos obtendo o tamanho do processo em MB.
+
+	echo "$(bc <<< "scale=2;$tamanho_processo/1024") MB" >> log/$nome_processo.log
+
 	done
 }
 
-# Estamos chamando a função "processos_memoria" e verificando o status de saída dessa função.
 processos_memoria
-if [ $? -eq 0 ] then
+if [ $? -eq 0 ]
+then
 	echo "Os arquivos foram salvos com sucesso!"
 else
-	echo "Houve um problema ao salvar os arquivos."
+	echo "Um erro ocorreu!"
 fi
 ```
 
